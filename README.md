@@ -22,8 +22,8 @@ The application will automatically check for updates at startup.
 If you want to run or modify the project locally, follow these steps:
 
 # Clone the repository
-git clone https://github.com/your-org/desktop-crm.git
-cd desktop-crm
+1. https://github.com/bajidata/CRM_DESKTOP.git
+2. cd desktop-crm
 
 # Install dependencies
 npm install
