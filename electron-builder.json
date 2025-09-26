@@ -1,0 +1,47 @@
+{
+  "appId": "com.baji.crm",
+  "files": ["dist-electron", "dist-react"],
+  "icon": "./desktopIcon.png",
+  "extraResources": [
+    "dist-electron/preload.cjs",
+    {
+      "from": "dist-electron/config",
+      "to": "config",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "dist-electron/sql",
+      "to": "sql",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "dist-electron/session",
+      "to": "session",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "dist-electron/chromium",
+      "to": "chromium",
+      "filter": ["**/*"]
+    }
+  ],
+  "mac": {
+    "target": "dmg"
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Utility"
+  },
+  "win": {
+    "target": ["nsis"],
+    "icon": "./desktopIcon.png"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "JohnPaulQuintana",
+      "repo": "crm-v1.1",
+      "releaseType": "release"
+    }
+  ]
+}

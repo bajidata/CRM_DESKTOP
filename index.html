@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/desktopIcon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRM - SQL Library</title>
+    <style>
+      /* Green-themed input */
+      .green-datetime {
+        padding: 10px 15px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 2px solid #4caf50;
+        background-color: #e8f5e9;
+        color: #1b5e20;
+        width: 220px;
+        transition: all 0.2s ease;
+      }
+
+      .green-datetime:focus {
+        border-color: #0c865e;
+        box-shadow: 0 0 5px #81c784;
+        outline: none;
+      }
+
+      /* Green-themed calendar popup */
+      .flatpickr-calendar {
+        border-radius: 12px;
+        font-family: Arial, sans-serif;
+        background-color: #a5d6a7; /* light green */
+        border: 2px solid #0c865e;
+      }
+
+      /* Calendar header */
+      .flatpickr-months {
+        background-color: #0c865e;
+        color: #fff !important;
+        border-bottom: 1px solid #0c865e;
+      }
+
+      /* Days hover effect */
+      .flatpickr-day:hover {
+        background-color: #0c865e;
+        color: #fff;
+        border-radius: 50%;
+      }
+
+      /* Selected day */
+      .flatpickr-day.selected {
+        background-color: #0c865e !important;
+        color: #fff;
+      }
+
+      /* Time picker background */
+      .flatpickr-time {
+        background-color: #e8f5e9;
+        border-top: 1px solid #0c865e;
+        color: #1b5e20;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Flatpickr CSS -->
+    <!-- <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> -->
+    <script type="module" src="/src/ui/main.tsx"></script>
+  </body>
+</html>

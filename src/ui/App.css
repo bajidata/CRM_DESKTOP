@@ -1,0 +1,109 @@
+/* Modern scrollbar for panels */
+::-webkit-scrollbar {
+  width: 10px; /* thickness */
+  height: 10px; /* horizontal scroll */
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f0f0; /* light gray background track */
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0f9c6d; /* green thumb to match your loaders */
+  border-radius: 6px;
+  border: 2px solid #f0f0f0; /* adds padding effect */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0c865e; /* brighter green on hover */
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent; /* remove corner if both scrollbars visible */
+}
+
+
+.loader {
+  width: fit-content;
+  font-size: 40px;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #0000; /* keep transparent fill */
+  -webkit-text-stroke: 1px #00ff00; /* green stroke */
+  background: 
+    conic-gradient(from -135deg at 100% 50%, #00ff00d8 90deg, #0000 0) text no-repeat,
+    conic-gradient(from -135deg at 1lh 50%, #0000 90deg, #00ff00d8 0) text no-repeat;
+  animation: l6 2s linear infinite;
+}
+
+/* Optional: remove default :before content if you use custom spans */
+/* .loader:before { content: "Loading"; } */
+
+@keyframes l6 {
+  0%     {background-size: 0 200%; background-position:0 0, 100% 0}
+  100%     {background-size: 0 200%; background-position:0 100%, 100% 100%}
+  /* 50%    {background-size: calc(60% + .5lh) 200%; background-position:0 0, 100% 0}
+  50.01% {background-size: calc(60% + .5lh) 200%; background-position:0 100%, 100% 100%}
+  100%   {background-size: 0 200%; background-position:0 100%, 100% 100%} */
+}
+
+
+/* HTML: <div class="loader-auth"></div> */
+.loader-auth {
+  --d:22px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  /* color: #25b09b; */
+  box-shadow: 
+    calc(1*var(--d))      calc(0*var(--d))     0 0,
+    calc(0.707*var(--d))  calc(0.707*var(--d)) 0 1px,
+    calc(0*var(--d))      calc(1*var(--d))     0 2px,
+    calc(-0.707*var(--d)) calc(0.707*var(--d)) 0 3px,
+    calc(-1*var(--d))     calc(0*var(--d))     0 4px,
+    calc(-0.707*var(--d)) calc(-0.707*var(--d))0 5px,
+    calc(0*var(--d))      calc(-1*var(--d))    0 6px;
+  animation: l27 1s infinite steps(8);
+}
+@keyframes l27 {
+  100% {transform: rotate(1turn)}
+}
+
+/* HTML: <div class="loader"></div> */
+.loader-scrapper {
+  width: 25px;
+  padding: 6px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f4f8f5;
+  --_m: 
+    conic-gradient(#0000 10%,#000),
+    linear-gradient(#000 0 0) content-box;
+  -webkit-mask: var(--_m);
+          mask: var(--_m);
+  -webkit-mask-composite: source-out;
+          mask-composite: subtract;
+  animation: l3 1s infinite linear;
+}
+@keyframes l3 {to{transform: rotate(1turn)}}
+
+
+/* HTML: <div class="loader"></div> */
+.starting-loader {
+  width: 70px;
+  padding: 8px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #00ff00;
+  --_m: 
+    conic-gradient(#0000 10%,#000),
+    linear-gradient(#000 0 0) content-box;
+  -webkit-mask: var(--_m);
+          mask: var(--_m);
+  -webkit-mask-composite: source-out;
+          mask-composite: subtract;
+  animation: l3 1s infinite linear;
+}
+@keyframes l3 {to{transform: rotate(1turn)}}

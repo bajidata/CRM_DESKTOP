@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    // requires strict types (null-save)
+    "strict": true,
+    // test Typescript to generate ESM Syntax
+    "target": "ESNext",
+    // tell Typescript to require ESM Syntax as input (including .js file imports)
+    "module": "NodeNext",
+    // define where to put generated JS
+    "outDir": "../../dist-electron",
+    // ignore errors from dependencies
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["./**/*.cts","./**/*.ts", "./config/**/*.json","./sql/**/*.sql","./session/**/*.json"]
+  // "include": ["**/*.ts", "config/**/*.json"]
+}
