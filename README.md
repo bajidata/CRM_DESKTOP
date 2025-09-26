@@ -21,7 +21,6 @@ The application will automatically check for updates at startup.
 
 If you want to run or modify the project locally, follow these steps:
 
-```bash
 # Clone the repository
 git clone https://github.com/your-org/desktop-crm.git
 cd desktop-crm
@@ -32,17 +31,11 @@ npm install
 # Install Chromium for Playwright
 npx playwright install
 
-Then, request the configuration file from the dev team and place it here:
+### 3. Then, request the configuration file from the dev team and place it here:
 
-src/electron/config.json
+src/electron/firebase-admin.json
 
 
-Finally, you can run the app in development mode:
+### 4. Finally, you can run the app in development mode:
 
 npm run dev
-
-
-Or build a production version locally:
-
-npm run build
-npm run dist
