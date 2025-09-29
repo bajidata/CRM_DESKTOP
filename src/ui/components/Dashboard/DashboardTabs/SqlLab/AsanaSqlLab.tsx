@@ -92,8 +92,11 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
           ({ success: false, data: [], sections: [] } as AsanaApiResponse);
 
         if (res?.success && res.sections) {
+          console.log("------------------------------------------")
+          console.log(res.sections)
           setAsanaSections(res.sections);
           const firstTask = res.sections[0]?.tasks[0] || null;
+
           if (firstTask) handleSelectTask(firstTask);
           else {
             setSelectedTask(null);

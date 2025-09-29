@@ -4,14 +4,14 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
-  FileSpreadsheet,
+  // FileSpreadsheet,
   FileText,
   Table,
   Loader2,
   CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { exportToCSV, exportToExcel } from "../../../utils/exportUtils";
+import { exportToCSV } from "../../../utils/exportUtils";
 import StatusCard from "./StatusCard";
 
 interface ResultPanelProps {
@@ -92,7 +92,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
       if (csvFilePth) {
         console.log("CSV downloaded to:", csvFilePth);
         setSuccessMsg(`CSV successfully saved to downloads`);
-        setTimeout(() => setSuccessMsg(null), 5000);
+        setTimeout(() => setSuccessMsg(null), 6000);
       }
     } catch (error) {
       console.error("CSV export failed:", error);
@@ -101,18 +101,18 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
     }
   };
 
-  const handleExportExcel = async () => {
-    try {
-      setExporting(true);
-      setOpen(false);
-      const today = new Date().toISOString().split("T")[0];
-      await exportToExcel(sortedData, `CRM-Report_${today}.xlsx`);
-    } catch (error) {
-      console.error("Excel export failed:", error);
-    } finally {
-      setExporting(false);
-    }
-  };
+  // const handleExportExcel = async () => {
+  //   try {
+  //     setExporting(true);
+  //     setOpen(false);
+  //     const today = new Date().toISOString().split("T")[0];
+  //     await exportToExcel(sortedData, `CRM-Report_${today}.xlsx`);
+  //   } catch (error) {
+  //     console.error("Excel export failed:", error);
+  //   } finally {
+  //     setExporting(false);
+  //   }
+  // };
 
   return (
     <div className="relative w-full">
@@ -198,13 +198,13 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
                 exit={{ opacity: 0, y: -5 }}
                 className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
               >
-                <button
+                {/* <button
                   onClick={handleExportExcel}
                   className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-100 transition"
                 >
                   <FileSpreadsheet size={16} className="text-[#0c865e]" />
                   Excel
-                </button>
+                </button> */}
                 <button
                   onClick={handleExportCSV}
                   className="flex items-center gap-2 w-full px-4 py-2 hover:bg-gray-100 transition"
@@ -300,7 +300,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
                         key={key}
                         className="px-4 py-2 text-gray-700 border-t max-w-[400px] whitespace-normal break-words"
                       >
-                        {row[key]}
+                        {String(row[key])}
                       </td>
                     ))}
                   </motion.tr>

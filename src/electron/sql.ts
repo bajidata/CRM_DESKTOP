@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { pipeline } from "stream/promises";
 import axios from "axios";
 import { IpcMain, dialog, shell, app } from "electron";
 import { chromium, Page, Browser, Locator } from "playwright-core";
@@ -667,7 +668,9 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
 
       // --- Download CSV using authenticated session ---
       const csvUrl = `https://ar0ytyts.superdv.com/superset/csv/${csvId}`;
-      const response = await context.request.get(csvUrl);
+      const response = await context.request.get(csvUrl, {
+        timeout: 180_000 
+      });
       if (!response.ok())
         throw new Error(`Failed to download CSV. Status: ${response.status()}`);
       const buffer = await response.body();
@@ -678,7 +681,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
       fs.writeFileSync(filePath, buffer);
 
       // --- Open file with default app (Excel, Numbers, etc.) ---
-      await shell.openPath(filePath);
+      // await shell.openPath(filePath);
 
       return { success: true, filePath };
     } catch (err: any) {

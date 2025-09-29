@@ -39,7 +39,7 @@
   "publish": [
     {
       "provider": "github",
-      "owner": "ExousiaNavi",
+      "owner": "bajidata",
       "repo": "CRM_DESKTOP",
       "releaseType": "release"
     }
