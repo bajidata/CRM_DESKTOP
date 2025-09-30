@@ -26,7 +26,7 @@ interface AsanaSqlLabProps {
   user: any;
   isRequesting: boolean;
   setIsRequesting: (arg: boolean) => void;
-  onCredentials: () => void;
+  // onCredentials: () => void;
   selectedProject: string | null;
 }
 
@@ -34,7 +34,7 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
   user,
   isRequesting,
   setIsRequesting,
-  onCredentials,
+  // onCredentials,
   selectedProject,
 }) => {
   const [asanaSections, setAsanaSections] = useState<Section[]>([]);
@@ -459,7 +459,7 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
         totalPages={totalPages}
         pageSize={pageSize}
         onPageChange={setCurrentPage}
-        onCredentials={onCredentials}
+        // onCredentials={onCredentials}
         showSupersetError={showVpnInfo}
         scriptDescription={scriptDescription}
         taskInfo={taskInfo}

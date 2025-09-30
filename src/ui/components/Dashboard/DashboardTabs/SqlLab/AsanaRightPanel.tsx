@@ -13,7 +13,7 @@ interface AsanaRightPanelProps {
   totalPages: number;
   pageSize: number;
   onPageChange: (page: number) => void;
-  onCredentials: () => void;
+  // onCredentials: () => void;
   showSupersetError: VpnInfo;
   scriptDescription: Description;
   taskInfo: any;

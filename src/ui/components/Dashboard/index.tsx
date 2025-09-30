@@ -4,14 +4,12 @@ import { Database } from "lucide-react";
 import { auth } from "../../firebase";
 import LoaderModal from "../Loader";
 import VpnPopup from "../VpnPopup";
-import CredPopup from "../CredPopup-notused";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { AsanaSqlLab } from "../Dashboard/DashboardTabs/SqlLab/AsanaSqlLab";
 import { ProfilePanel } from "../Dashboard/DashboardTabs/ProfilePanel";
 import type {
   DashboardProps,
-  CrendentialInfo,
   VpnInfo,
   TabConfig,
 } from "../types/index";
@@ -27,12 +25,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, setUser }) => {
   const [showVpn, setShowVpn] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showVpnInfo] = useState<VpnInfo>({ title: "", text: "" });
-  const [credential, setCredential] = useState<CrendentialInfo>({
-    visible: false,
-    username: "",
-    password: "",
-  });
-
   const [projects, setProjects] = useState<{ gid: string; name: string }[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
 
@@ -63,27 +55,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, setUser }) => {
     }
   };
 
-  const handleCredentials = async () => {
-    const credRes = await window.electron?.getCredentials();
-    setCredential({
-      visible: true,
-      username: credRes?.credentials?.username || "",
-      password: credRes?.credentials?.password || "",
-    });
-  };
-
-  const handleSaveCreds = async (username: string, password: string) => {
-    const saveRes = await window.electron?.saveCredentials({
-      username,
-      password,
-    });
-    if (saveRes?.success) {
-      setCredential({ visible: false, username, password });
-    } else {
-      alert("Can't Save your credentials...");
-    }
-  };
-
   const renderActiveTab = () => {
     switch (activeTab) {
       case "sql":
@@ -92,8 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, setUser }) => {
             user={user}
             isRequesting={isRequesting}
             setIsRequesting={setIsRequesting}
-            onCredentials={handleCredentials}
-            selectedProject={selectedProject} // 🔥 send gid here
+            selectedProject={selectedProject} // send gid here
           />
         );
       case "profile":
@@ -134,11 +104,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, setUser }) => {
           )}
 
           <VpnPopup visible={showVpn} info={showVpnInfo} setShow={setShowVpn} />
-          <CredPopup
-            creds={credential}
-            onSave={handleSaveCreds}
-            onClose={() => setCredential({ ...credential, visible: false })}
-          />
         </main>
       </div>
     </div>

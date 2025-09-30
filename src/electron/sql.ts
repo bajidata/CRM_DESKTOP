@@ -1,23 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { pipeline } from "stream/promises";
 import axios from "axios";
-import { IpcMain, dialog, shell, app } from "electron";
+import { IpcMain, app } from "electron";
 import { chromium, Page, Browser, Locator } from "playwright-core";
 import { getWritableDir } from "./resources.js";
 import { isDev } from "./util.js";
-import type {
-  Section,
-  Task,
-  LatestSQL,
-  ParsedSQL,
-  EditableContents,
-  SupportedValues,
-  InputField,
-} from "./types.js";
-
 import https from "https";
-import { getSupersetCredentials, getSupersetCredential } from "./auth.js";
+import { getSupersetCredentials } from "./auth.js";
 
 // ==================================================
 // Paths & Helpers
@@ -108,11 +97,11 @@ async function asanaGet(endpoint: string, force = false) {
   const cached = asanaCache.get(endpoint);
 
   if (!force && cached && now - cached.ts < CACHE_TTL) {
-    console.log(`✅ Using cached Asana data for ${endpoint}`);
+    console.log(`Using cached Asana data for ${endpoint}`);
     return cached.data; // this should be already the unwrapped data
   }
 
-  console.log(`⏳ Fetching fresh Asana data for ${endpoint}`);
+  console.log(`Fetching fresh Asana data for ${endpoint}`);
   const res = await asanaAxios.get(endpoint);
 
   // Extract only the `data` array from Asana response
@@ -138,7 +127,7 @@ function cleanupAsanaCache() {
 
   if (removed > 0) {
     console.log(
-      `🧹 Cache cleanup completed: removed ${removed} expired entries`
+      `Cache cleanup completed: removed ${removed} expired entries`
     );
   }
 }
@@ -155,7 +144,7 @@ async function fetchAllProjects() {
 function parseIdentity(description: string) {
   const brandMatch = description.match(/Brand\s*Type:\s*(\w+)/i);
   const currencyMatch = description.match(/Currency\s*Type:\s*(\w+)/i);
-  // ✅ Case-insensitive match for "Requestor:"
+  // Case-insensitive match for "Requestor:"
   const requestorMatch = description.match(/requestor:\s*(.+)/i);
 
   return {
@@ -365,7 +354,7 @@ async function fetchProjectStructure(projectGid: string, role: string) {
 // IPC Registration
 // ==================================================
 export function registerSqlHandlers(ipcMain: IpcMain) {
-  // ---------- Brands ----------
+  // ---------- Brands not used ----------
   ipcMain.handle("sql:getBrands", async () => {
     try {
       const brands = fs
@@ -378,7 +367,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
     }
   });
 
-  // ---------- Files ----------
+  // ---------- Files not used ----------
   ipcMain.handle("sql:getFiles", async (_event, brand: string) => {
     try {
       const brandDir = path.join(getSqlBaseDir(), brand);
@@ -390,7 +379,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
     }
   });
 
-  // ---------- File Content ----------
+  // ---------- File Content not used ----------
   ipcMain.handle(
     "sql:getFileContent",
     async (_event, brand: string, file: string) => {
@@ -606,6 +595,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
     }
   );
 
+  // ---------- Save & Download CSV ----------
   ipcMain.handle("superset:downloadCsv", async (_event, csvId: string) => {
     let browser: Browser | undefined;
 
@@ -669,14 +659,14 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
       // --- Download CSV using authenticated session ---
       const csvUrl = `https://ar0ytyts.superdv.com/superset/csv/${csvId}`;
       const response = await context.request.get(csvUrl, {
-        timeout: 180_000 
+        timeout: 180_000,
       });
       if (!response.ok())
         throw new Error(`Failed to download CSV. Status: ${response.status()}`);
       const buffer = await response.body();
 
       // --- Save to user's real Downloads folder ---
-      const downloadsDir = app.getPath("downloads"); // ✅ OS default Downloads folder
+      const downloadsDir = app.getPath("downloads"); // OS default Downloads folder
       const filePath = path.join(downloadsDir, `CRM-Report-${Date.now()}.csv`);
       fs.writeFileSync(filePath, buffer);
 
@@ -691,253 +681,6 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
     }
   });
 
-  // New Version Release based on asana
-  //   ipcMain.handle("sql:getFromAsana", async () => {
-  //     try {
-  //       // Replace this with your real Asana API fetch
-  //       const asanaResponse: Section[] = [
-  //         {
-  //           section_name: "Untitled section",
-  //           section_gid: "1207974428313658",
-  //           task_count: 2,
-  //           tasks: [
-  //             {
-  //               gid: "1211285373129481",
-  //               title: "Automation Scripts Test 1",
-  //               description: `Brand Type: BAJI
-  //               The script should:
-  //                 Identify users who have placed at least one bet in the Cricket Exchange within the last 7 days.
-  //                 Exclude users who have made any deposit within the last 7 days.
-
-  //               The expected results table of report should include:
-  //               1) Username
-  //               2) Phone no
-  //               3) Total deposit amount`,
-  //               identity: { brand: "BAJI", currency: null },
-  //               latest_sql: {
-  //                 gid: "1211354897183805",
-  //                 created_at: "2025-09-15T00:38:06.281Z",
-  //                 created_by: "JP",
-  //                 parsed_sql: {
-  //                   editable_contents: {
-  //                     start_date: "2025-09-15",
-  //                     end_date: "2025-09-15",
-  //                     currency: "BDT",
-  //                     brand: "BAJI",
-  //                     game_type: "Sport",
-  //                   },
-  //                   supported_values: {
-  //                     currency: ["BDT", "PKR", "INR", "NPR"],
-  //                     game_type: [
-  //                       "TIP",
-  //                       "CRASH",
-  //                       "OTHERS",
-  //                       "RAIN",
-  //                       "ARCADE",
-  //                       "SLOT",
-  //                       "Sport",
-  //                       "ESport",
-  //                       "P2P",
-  //                       "LOTTERY",
-  //                       "TABLE",
-  //                       "NoValue",
-  //                       "FREE",
-  //                       "FH",
-  //                       "CARD",
-  //                       "CASINO",
-  //                       "COCK_FIGHTING",
-  //                     ],
-  //                   },
-  //                   template_script: `WITH gvars as (
-  //                     SELECT
-  //                       '{{currency}}' as currency
-  //                       ,'{{game_type}}' as game_type
-  //                       ,'{{start_date}}' as start_date
-  //                       ,'{{end_date}}' as end_date
-  //                   )
-
-  //                   SELECT
-  //                     account_user_id
-  //                     ,currency_type_name
-  //                     ,game_type_name
-  //                     ,sum(turnover) as turnover
-  //                     ,sum(profit_loss) *-1 as company_pnl
-  //                   FROM ads_mcd_bj_game_transaction_account_game_day_agg
-  //                   WHERE currency_type_name = (SELECT currency FROM gvars)
-  //                   AND settle_date_id BETWEEN (SELECT start_date FROM gvars) AND (SELECT end_date FROM gvars)
-  //                   AND game_type_name = (SELECT game_type FROM gvars)
-
-  //                   GROUP BY 1,2,3`,
-  //                 },
-  //               },
-  //             },
-  //             {
-  //               gid: "1211354898113442",
-  //               title: "Automation Scripts Test 2",
-  //               description: `Brand Type: BAJI
-
-  //               The script should:
-  //                 Identify users who have placed at least one bet in the Cricket Exchange within the last 7 days.
-  //                 Exclude users who have made any deposit within the last 7 days.
-
-  //               The expected results table of report should include:
-  //               1) Username
-  //               2) Phone no
-  //               3) Total deposit amount`,
-  //               identity: { brand: "BAJI", currency: null },
-  //               latest_sql: {
-  //                 gid: "1211354898113445",
-  //                 created_at: "2025-09-15T01:04:02.142Z",
-  //                 created_by: "JP",
-  //                 parsed_sql: {
-  //                   editable_contents: {
-  //                     start_date: "2025-09-15",
-  //                     end_date: "2025-09-15",
-  //                   },
-  //                   supported_values: {},
-  //                   template_script: `
-  //                   with gvars as ( -- JILI আনলিমিটেড ফ্রি স্পিন
-  //   SELECT
-  //     'JILI আনলিমিটেড ফ্রি স্পিন' as bonus_title
-  //     ,'rt00005 - JILI Daily Unlimited Free Spins' as bonus_code
-  //     ,500 as min_init_deposit --min deposit amount
-  //     ,TIMESTAMP '{{start_date}}' as start_date --localtime
-  //     ,TIMESTAMP '{{end_date}}' as end_date  -- localtime
-  // )
-
-  // ,bonus_claimers as (
-  //   SELECT
-  //       account_user_id
-  //       ,currency_type_name
-  //       ,MIN(from_unixtime((create_time / 1000) + 21600)) AS opt_in_tm
-  //     FROM ads_mcd_bh_account_bonus_turnover
-  //     WHERE bonus_code in (SELECT bonus_code FROM gvars)
-  //       AND bonus_title in (SELECT bonus_title FROM gvars)
-  //       AND init_deposit >= (SELECT min_init_deposit FROM gvars)
-  //       AND from_unixtime((create_time / 1000) + 21600) between (SELECT start_date FROM gvars) AND (SELECT end_date FROM gvars)
-  //   GROUP BY 1,2
-  // )
-  // ,bonus_exclusion as (
-  //   SELECT
-  //     bc.account_user_id
-  //     ,SUM(bonus) as bonus_amt
-  //   FROM bonus_claimers bc
-  //   LEFT JOIN (SELECT
-  //       account_user_id
-  //       ,bonus
-  //     FROM ads_mcd_bh_account_bonus_turnover
-  //     WHERE from_unixtime((create_time / 1000) + 21600)
-  //       between (SELECT start_date FROM gvars) AND (SELECT end_date FROM gvars)) bt
-  //   ON bc.account_user_id = bt.account_user_id
-  //   GROUP BY 1
-  // )
-
-  // ,game_txn as (
-  //   SELECT
-  //     bc.account_user_id
-  //     ,sum(turnover) as turnover
-  //     ,FLOOR(SUM(gt.turnover) / 5000) * 10 AS to_free_spins
-  //     ,count(*) as game_count
-  //     ,CASE WHEN count(*) >= 300 THEN 10 ELSE 0 END as gc_free_spins
-  //     ,sum(profit_loss) as profit_loss
-  //   FROM bonus_claimers bc
-  //   LEFT JOIN (SELECT
-  //       account_user_id
-  //       ,turnover
-  //       ,profit_loss
-  //       ,from_unixtime((settle_time / 1000) + 21600) as settle_tm
-  //     FROM ads_mcd_bh_game_transaction
-  //     WHERE game_type_name = 'SLOT'
-  //       AND game_vendor_name = 'JILI'
-  //       AND system_txn_status_name = 'SETTLED'
-  //       AND bonus_wallet_bet_type_name <> 'Bonus Wallet'
-  //       AND settle_date_id
-  //         between (SELECT cast(date(start_date) - interval '1' day as VARCHAR ) FROM gvars)
-  //           AND (SELECT cast(date(end_date) + interval '1' day as VARCHAR ) FROM gvars) ) gt
-  //   ON bc.account_user_id = gt.account_user_id
-  //   WHERE settle_tm between opt_in_tm AND (SELECT end_date - interval '2' hour FROM gvars)
-  //   GROUP BY 1
-  // )
-
-  // ,pnl_calc as (
-  //   SELECT
-  //     gt.account_user_id
-  //     ,profit_loss
-  //     ,coalesce(bonus_amt,0) as bonus_amt
-  //     ,profit_loss - coalesce(bonus_amt,0) as profit_loss_ex_bonus
-  //     ,CASE WHEN (profit_loss * -1) - coalesce(bonus_amt,0) >= 1000 THEN 30 ELSE 0 END as pnl_free_spins
-  //   FROM game_txn gt
-  //   LEFT JOIN bonus_exclusion bc
-  //   ON gt.account_user_id = bc.account_user_id
-  // )
-
-  // SELECT
-  //   gt.account_user_id as "User ID"
-  //   ,phone_number  as "Phone Number"
-  //   ,turnover as "Total Turnover"
-  //   ,game_count as "Game Rounds"
-  //   ,gt.profit_loss as "Net Loss"
-  //   ,bonus_amt as "Yesterday Bonus Amount"
-  //   ,profit_loss_ex_bonus as "Profit Loss Minus Bonus"
-  //   ,to_free_spins + gc_free_spins + pnl_free_spins as "Total Free Spins"
-  // FROM game_txn gt
-  // LEFT JOIN (SELECT user_id , is_phone_verified , phone_number FROM ads_mcd_bh_account) aa
-  // ON account_user_id = user_id
-  // LEFT JOIN pnl_calc pc
-  // ON gt.account_user_id = pc.account_user_id
-  // ORDER BY 8 DESC, 1`,
-  //                 },
-  //               },
-  //             },
-  //           ],
-  //         },
-  //       ];
-
-  //       // Build typed inputs for each task
-  //       const tasksWithInputs: (Task & { inputs: InputField[] })[] =
-  //         asanaResponse.flatMap((section) =>
-  //           section.tasks.map((task) => {
-  //             const editable: EditableContents =
-  //               task.latest_sql?.parsed_sql.editable_contents || {};
-  //             const supported: SupportedValues =
-  //               task.latest_sql?.parsed_sql.supported_values || {};
-
-  //             const inputs: InputField[] = Object.entries(editable).map(
-  //               ([name, value]) => {
-  //                 if (/date/i.test(name)) {
-  //                   return { name, default: value, type: "date" };
-  //                 } else if (supported[name]) {
-  //                   return {
-  //                     name,
-  //                     default: value,
-  //                     type: "select",
-  //                     options: supported[name],
-  //                   };
-  //                 } else {
-  //                   return { name, default: value, type: "text" };
-  //                 }
-  //               }
-  //             );
-
-  //             return { ...task, inputs };
-  //           })
-  //         );
-
-  //       // Map tasks back into sections
-  //       const sectionsWithTasks = asanaResponse.map((section) => ({
-  //         section_name: section.section_name,
-  //         section_gid: section.section_gid,
-  //         task_count: section.task_count,
-  //         tasks: tasksWithInputs.filter((t) =>
-  //           section.tasks.some((st) => st.gid === t.gid)
-  //         ),
-  //       }));
-
-  //       return { success: true, sections: sectionsWithTasks };
-  //     } catch (err: any) {
-  //       return { success: false, error: err.message };
-  //     }
-  //   });
   // ---------- Fetch From Asana ----------
   ipcMain.handle(
     "sql:getFromAsana",

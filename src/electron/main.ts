@@ -8,7 +8,7 @@ import { registerSqlHandlers } from "./sql.js";
 import { registerCredentialHandlers } from "./credentials.js";
 import { setupAutoUpdater } from "./updater.js";
 import { bootstrapResources } from "./resources.js";
-import { registerSqlDescriptionHandlers } from "./sqlDescription.js";
+// import { registerSqlDescriptionHandlers } from "./sqlDescription.js";
 import { fetchAsanaProjects, AsanaProject } from "./asana.js";
 
 app.on("ready", async () => {
@@ -24,12 +24,12 @@ app.on("ready", async () => {
     autoHideMenuBar: true,
     webPreferences: {
       preload: getPreloadPath(),
-      devTools: isDev(), // ⛔ disable DevTools in production
+      devTools: isDev(), // disable DevTools in production
       // zoomFactor: 2, // adjust this to scale UI
     },
   });
 
-  // ✅ Apply scaling so UI looks the same on all resolutions
+  // Apply scaling so UI looks the same on all resolutions
   mainWindow.webContents.setZoomFactor(scaleFactor);
 
   mainWindow.maximize();
@@ -40,12 +40,12 @@ app.on("ready", async () => {
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), "/dist-react/index.html"));
 
-    // 🚫 Prevent DevTools opening in production
+    // Prevent DevTools opening in production
     mainWindow.webContents.on("devtools-opened", () => {
       mainWindow.webContents.closeDevTools();
     });
 
-    // 🚫 Block DevTools shortcuts
+    // Block DevTools shortcuts
     app.on("browser-window-focus", () => {
       globalShortcut.register("CommandOrControl+Shift+I", () => false);
       globalShortcut.register("F12", () => false);
@@ -56,17 +56,17 @@ app.on("ready", async () => {
     });
   }
 
-  // 🚀 Fetch Asana projects automatically (no UI trigger needed)
+  // Fetch Asana projects automatically (no UI trigger needed)
   try {
     const projects: AsanaProject[] = await fetchAsanaProjects();
-    console.log("✅ Asana Projects:", projects);
+    console.log("Asana Projects:", projects);
 
     // Optionally send them to renderer once window is ready
     mainWindow.webContents.on("did-finish-load", () => {
       mainWindow.webContents.send("asana:projects-ready", projects);
     });
   } catch (err: any) {
-    console.error("❌ Failed to fetch Asana projects:", err.message);
+    console.error("Failed to fetch Asana projects:", err.message);
   }
 
   setupAutoUpdater(mainWindow); // forward updater events to window instead of blocking dialogs
@@ -75,7 +75,7 @@ app.on("ready", async () => {
   registerAuthHandlers(ipcMain);
   registerSqlHandlers(ipcMain);
   registerCredentialHandlers(ipcMain);
-  registerSqlDescriptionHandlers(ipcMain);
+  // registerSqlDescriptionHandlers(ipcMain);
 });
 
 
