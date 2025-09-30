@@ -33,7 +33,7 @@ npx playwright install
 
 ### 3. Then, request the configuration file from the dev team and place it here:
 
-src/electron/firebase-admin.json
+src/electron/config/firebase-admin.json
 
 
 ### 4. Finally, you can run the app in development mode:
