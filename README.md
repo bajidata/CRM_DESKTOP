@@ -6,6 +6,15 @@ It also includes an auto-update system to keep everyone on the latest version.
 
 ---
 
+## CODE-BASED DOCUMENTATION
+ - https://docs.google.com/document/d/1b9tTVm5YiPbzEmJaU-06VTIltWG2NRfUBWcdgMujeHQ/edit?tab=t.0#heading=h.eqcbckosw6ix
+
+## CRM DOCUMENTATION
+ - https://docs.google.com/document/d/1g85EoelhAUnTyQTx6Gg_098ONfZGFDwNCcvkkGizf24/edit?tab=t.0#heading=h.njimr9c794c8
+
+## CRM TEST CASE
+ - https://docs.google.com/document/d/1Gel1BtFtKXhT3Pm9qACAP7kmghpb6LBaKGKIepW_Dck/edit?tab=t.0#heading=h.ocnjtk163l4d
+   
 ## Installation & Setup
 
 ### 1. For End Users (Installer Setup)
