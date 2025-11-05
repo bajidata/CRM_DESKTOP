@@ -18,6 +18,11 @@
       "from": "dist-electron/session",
       "to": "session",
       "filter": ["**/*"]
+    },
+    {
+      "from": "dist-electron/chromium",
+      "to": "chromium",
+      "filter": ["**/*"]
     }
   ],
   "mac": {
