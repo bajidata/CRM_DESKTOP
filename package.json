@@ -17,7 +17,7 @@
     "transpile:electron": "tsc -p src/electron/tsconfig.json",
     "install-browsers": "playwright install chromium",
     "copy:browsers": "xcopy \"%LOCALAPPDATA%\\ms-playwright\\chromium-1187\\chrome-win\" \"dist-electron\\chromium\\chrome-win\" /E /I /H /Y",
-    "dist:publish:win": "npm run transpile:electron && npm run build && npm run copy:sql && npm run copy:session && npm run copy:browsers && electron-builder --win --x64 --publish always",
+    "dist:publish:win": "npm run transpile:electron && npm run build && npm run copy:sql && npm run copy:session && electron-builder --win --x64 --publish always",
     "copy:sql": "cp-cli \"src/electron/sql\" dist-electron/sql --recursive --glob \"**/*\"",
     "copy:session": "cp-cli \"src/electron/session\" dist-electron/session --recursive --glob \"**/*\"",
     "postinstall": ""
