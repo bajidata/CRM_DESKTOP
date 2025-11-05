@@ -25,8 +25,9 @@ function normalizeErrorMessage(error: any): string {
 export const handleExecutionError = (
   result: ExecutionResult
 ): { vpnInfo: VpnInfo; showVpn: boolean } => {
+  console.log(result)
   const errorMessage = normalizeErrorMessage(result.error);
-
+  
   if (result.type === "vpn_error") {
     return {
       vpnInfo: {
@@ -60,7 +61,7 @@ export const handleExecutionError = (
   if (result.type === "sql_error" || result.type === "superset_error") {
     return {
       vpnInfo: {
-        title: "Permission Error",
+        title: "Superset Execution Error",
         text: errorMessage,
       },
       showVpn: true,

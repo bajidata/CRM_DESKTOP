@@ -2,10 +2,11 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import { IpcMain, app } from "electron";
-import { chromium, Page, Browser, Locator } from "playwright-core";
+// import { chromium, Page, Browser, Locator } from "playwright-core";
 import { getWritableDir } from "./resources.js";
 import { isDev } from "./util.js";
 import https from "https";
+import * as cheerio from "cheerio";
 import { getSupersetCredentials } from "./auth.js";
 
 // ==================================================
@@ -126,9 +127,7 @@ function cleanupAsanaCache() {
   }
 
   if (removed > 0) {
-    console.log(
-      `Cache cleanup completed: removed ${removed} expired entries`
-    );
+    console.log(`Cache cleanup completed: removed ${removed} expired entries`);
   }
 }
 
@@ -394,21 +393,232 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
   );
 
   // ---------- Save & Run SQL ----------
+  // ipcMain.handle(
+  //   "sql:runFile",
+  //   async (_event, brand: string, file: string, content: string) => {
+  //     let browser: Browser | undefined;
+  //     let page: Page | undefined;
+  //     let newTab: Locator | undefined;
+
+  //     const sessionDir = getSessionBaseDir();
+  //     fs.mkdirSync(sessionDir, { recursive: true });
+  //     const storageStatePath = path.join(sessionDir, "auth.json");
+  //     const metaPath = path.join(sessionDir, "auth_meta.json");
+  //     const loginUrl = "https://ar0ytyts.superdv.com/login";
+
+  //     try {
+  //       // --- Get Firestore credential ---
+  //       const creds = await getSupersetCredentials();
+  //       const activeCred = creds.find((c: any) => c.status === true);
+  //       if (!activeCred) {
+  //         return {
+  //           success: false,
+  //           type: "credentials_required",
+  //           error: "No active Superset credential found in Firestore",
+  //         };
+  //       }
+
+  //       // --- VPN check ---
+  //       const reachable = await checkSiteReachable(loginUrl);
+  //       if (!reachable) {
+  //         return {
+  //           success: false,
+  //           type: "vpn_error",
+  //           error: "Site not reachable.",
+  //         };
+  //       }
+
+  //       // --- Launch Playwright ---
+  //       browser = await chromium.launch({
+  //         headless: true,
+  //         executablePath: getChromiumExecutablePath(),
+  //         args: [
+  //           "--no-sandbox",
+  //           "--disable-setuid-sandbox",
+  //           "--disable-dev-shm-usage",
+  //           "--disable-gpu",
+  //         ],
+  //       });
+
+  //       // --- Determine if we can reuse existing session ---
+  //       let lastUsername = "";
+  //       if (fs.existsSync(metaPath)) {
+  //         lastUsername = JSON.parse(
+  //           fs.readFileSync(metaPath, "utf-8")
+  //         ).username;
+  //       }
+  //       const useExistingSession =
+  //         fs.existsSync(storageStatePath) &&
+  //         lastUsername === activeCred.username;
+
+  //       const context = useExistingSession
+  //         ? await browser.newContext({ storageState: storageStatePath })
+  //         : await browser.newContext();
+
+  //       page = await context.newPage();
+  //       await page.goto(loginUrl);
+
+  //       // --- Login if session missing or username changed ---
+  //       if (!useExistingSession) {
+  //         console.log(`Logging in as ${activeCred.username}`);
+  //         await page.fill("#username", activeCred.username);
+  //         await page.fill("#password", activeCred.password);
+  //         await Promise.all([
+  //           page.waitForURL(/.*\/superset\/(welcome|dashboard).*/, {
+  //             timeout: 15000,
+  //           }),
+  //           page.click('input[type="submit"][value="Sign In"]'),
+  //         ]);
+
+  //         // Save session + who owns it
+  //         await context.storageState({ path: storageStatePath });
+  //         fs.writeFileSync(
+  //           metaPath,
+  //           JSON.stringify({ username: activeCred.username })
+  //         );
+  //       } else {
+  //         console.log(`Reusing existing session for ${activeCred.username}`);
+  //       }
+
+  //       // --- SQL Lab ---
+  //       await page.goto("https://ar0ytyts.superdv.com/superset/sqllab");
+
+  //       await page.click("button.ant-tabs-nav-add", { force: true });
+  //       await page.waitForTimeout(2000);
+
+  //       newTab = page.locator(
+  //         ".ant-tabs-tab.ant-tabs-tab-active:has(button.ant-tabs-tab-remove)"
+  //       );
+  //       await newTab.waitFor();
+
+  //       // --- Inject SQL into Ace ---
+  //       await page.waitForSelector("#ace-editor");
+  //       await page.click("#ace-editor");
+  //       await page.keyboard.press("Control+A");
+  //       await page.keyboard.press("Backspace");
+
+  //       const sanitizedSQL = content.replace(/\{\{|\}\}/g, "");
+  //       await page.evaluate((sql: string) => {
+  //         const editor = (window as any).ace.edit("ace-editor");
+  //         editor.setValue(sql, -1);
+  //       }, sanitizedSQL);
+
+  //       // --- Set LIMIT dropdown (optional) ---
+  //       try {
+  //         await page.click("a.ant-dropdown-trigger");
+  //         const limitOption = page
+  //           .locator('li.ant-dropdown-menu-item:has-text("1 000 000")')
+  //           .first();
+  //         await limitOption.waitFor({ state: "visible", timeout: 5000 });
+  //         await limitOption.click();
+  //       } catch (err) {
+  //         console.warn("Failed to set LIMIT dropdown:", (err as Error).message);
+  //       }
+
+  //       // Small delay to give the UI time to apply the new selection
+  //       await page.waitForTimeout(3000); // 0.5s delay, adjust if needed
+
+  //       // --- Run SQL ---
+  //       const runButton = page.locator("button.superset-button.cta", {
+  //         hasText: /Run/i,
+  //       });
+  //       await runButton.waitFor({ state: "visible", timeout: 10000 });
+
+  //       let resolved = false;
+  //       const sqlResult = await new Promise<any>((resolve, reject) => {
+  //         const timeout = setTimeout(
+  //           () => reject(new Error("SQL query timed out")),
+  //           60000
+  //         );
+
+  //         page?.on("response", async (response) => {
+  //           if (resolved) return;
+  //           if (response.url().includes("/superset/sql_json/")) {
+  //             resolved = true;
+  //             clearTimeout(timeout);
+  //             const body = await response.json();
+  //             if (response.status() === 200) {
+  //               if (body.error) reject(new Error(`Query Error: ${body.error}`));
+  //               else resolve(body);
+  //             } else if (
+  //               response.status() === 403 ||
+  //               response.status() === 500
+  //             ) {
+  //               // Return structured error instead of stringified JSON
+  //               reject({ type: "forbidden", body });
+  //             } else {
+  //               reject(
+  //                 new Error(
+  //                   `SQL request failed with status ${response.status()}`
+  //                 )
+  //               );
+  //             }
+  //           }
+  //         });
+
+  //         runButton.click({ force: true }).catch(reject);
+  //       });
+
+  //       return {
+  //         success: true,
+  //         type: "success",
+  //         title: sqlResult?.query?.db || "No Database",
+  //         data: sqlResult?.data?.length ? sqlResult.data : [],
+  //         csv_link: sqlResult?.query?.id || "",
+  //         columns: sqlResult?.columns?.length ? sqlResult.columns : [],
+  //         sessionPath: storageStatePath,
+  //       };
+  //     } catch (err: any) {
+  //       if (err?.body) {
+  //         return {
+  //           success: false,
+  //           type: "superset_error",
+  //           error: err.body, // full Superset response here
+  //         };
+  //       }
+
+  //       return { success: false, type: "auth_error", error: err.message };
+  //     } finally {
+  //       try {
+  //         if (newTab) {
+  //           const closeBtn = newTab.locator("button.ant-tabs-tab-remove");
+  //           await closeBtn.click();
+  //         }
+  //         if (browser) {
+  //           await browser.close();
+  //         }
+  //       } catch {
+  //         // ignore cleanup errors
+  //       }
+  //     }
+  //   }
+  // );
+
+  // version 2 network call
+
+  function generateClientId(length = 10): string {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
   ipcMain.handle(
     "sql:runFile",
     async (_event, brand: string, file: string, content: string) => {
-      let browser: Browser | undefined;
-      let page: Page | undefined;
-      let newTab: Locator | undefined;
-
       const sessionDir = getSessionBaseDir();
       fs.mkdirSync(sessionDir, { recursive: true });
-      const storageStatePath = path.join(sessionDir, "auth.json");
+      const cookiePath = path.join(sessionDir, "cookies.json");
       const metaPath = path.join(sessionDir, "auth_meta.json");
-      const loginUrl = "https://ar0ytyts.superdv.com/login";
+      const baseUrl = "https://ar0ytyts.superdv.com";
+      const loginUrl = `${baseUrl}/login/`;
+      const sqlJsonUrl = `${baseUrl}/superset/sql_json/`;
 
       try {
-        // --- Get Firestore credential ---
+        // --- Step 0: Load active credentials from Firestore
         const creds = await getSupersetCredentials();
         const activeCred = creds.find((c: any) => c.status === true);
         if (!activeCred) {
@@ -419,8 +629,10 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
           };
         }
 
-        // --- VPN check ---
-        const reachable = await checkSiteReachable(loginUrl);
+        console.log(`Attempting to login as: ${activeCred.username}`);
+
+        // --- Step 1: Check VPN/site reachability
+        const reachable = await checkSiteReachable(baseUrl);
         if (!reachable) {
           return {
             success: false,
@@ -429,257 +641,284 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
           };
         }
 
-        // --- Launch Playwright ---
-        browser = await chromium.launch({
-          headless: true,
-          executablePath: getChromiumExecutablePath(),
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-          ],
+        // Clear any old session
+        if (fs.existsSync(cookiePath)) fs.unlinkSync(cookiePath);
+        if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+
+        // --- Step 2: Initialize axios instance (browser-like)
+        const axiosInstance = axios.create({
+          baseURL: baseUrl,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            Connection: "keep-alive",
+          },
+          withCredentials: true,
+          maxRedirects: 0,
+          validateStatus: (status) => status >= 200 && status < 400,
         });
 
-        // --- Determine if we can reuse existing session ---
-        let lastUsername = "";
-        if (fs.existsSync(metaPath)) {
-          lastUsername = JSON.parse(
-            fs.readFileSync(metaPath, "utf-8")
-          ).username;
-        }
-        const useExistingSession =
-          fs.existsSync(storageStatePath) &&
-          lastUsername === activeCred.username;
+        // --- Step 3: Get login page for CSRF + session cookie
+        console.log("Fetching login page for CSRF...");
+        const loginPageResp = await axiosInstance.get(loginUrl);
+        const $ = cheerio.load(loginPageResp.data);
+        const csrfToken = $('input[name="csrf_token"]').val() as string;
+        if (!csrfToken) throw new Error("No CSRF token found in login form");
 
-        const context = useExistingSession
-          ? await browser.newContext({ storageState: storageStatePath })
-          : await browser.newContext();
+        const sessionCookie = (loginPageResp.headers["set-cookie"] || [])
+          .map((h: string) => h.split(";")[0])
+          .join("; ");
 
-        page = await context.newPage();
-        await page.goto(loginUrl);
+        console.log("CSRF token & session cookie ready");
 
-        // --- Login if session missing or username changed ---
-        if (!useExistingSession) {
-          console.log(`Logging in as ${activeCred.username}`);
-          await page.fill("#username", activeCred.username);
-          await page.fill("#password", activeCred.password);
-          await Promise.all([
-            page.waitForURL(/.*\/superset\/(welcome|dashboard).*/, {
-              timeout: 15000,
-            }),
-            page.click('input[type="submit"][value="Sign In"]'),
-          ]);
-
-          // Save session + who owns it
-          await context.storageState({ path: storageStatePath });
-          fs.writeFileSync(
-            metaPath,
-            JSON.stringify({ username: activeCred.username })
-          );
-        } else {
-          console.log(`Reusing existing session for ${activeCred.username}`);
-        }
-
-        // --- SQL Lab ---
-        await page.goto("https://ar0ytyts.superdv.com/superset/sqllab");
-
-        await page.click("button.ant-tabs-nav-add", { force: true });
-        await page.waitForTimeout(2000);
-
-        newTab = page.locator(
-          ".ant-tabs-tab.ant-tabs-tab-active:has(button.ant-tabs-tab-remove)"
-        );
-        await newTab.waitFor();
-
-        // --- Inject SQL into Ace ---
-        await page.waitForSelector("#ace-editor");
-        await page.click("#ace-editor");
-        await page.keyboard.press("Control+A");
-        await page.keyboard.press("Backspace");
-
-        const sanitizedSQL = content.replace(/\{\{|\}\}/g, "");
-        await page.evaluate((sql: string) => {
-          const editor = (window as any).ace.edit("ace-editor");
-          editor.setValue(sql, -1);
-        }, sanitizedSQL);
-
-        // --- Set LIMIT dropdown (optional) ---
-        try {
-          await page.click("a.ant-dropdown-trigger");
-          const limitOption = page
-            .locator('li.ant-dropdown-menu-item:has-text("1 000 000")')
-            .first();
-          await limitOption.waitFor({ state: "visible", timeout: 5000 });
-          await limitOption.click();
-        } catch (err) {
-          console.warn("Failed to set LIMIT dropdown:", (err as Error).message);
-        }
-
-        // Small delay to give the UI time to apply the new selection
-        await page.waitForTimeout(3000); // 0.5s delay, adjust if needed
-
-        // --- Run SQL ---
-        const runButton = page.locator("button.superset-button.cta", {
-          hasText: /Run/i,
+        // --- Step 4: Send login POST
+        const loginData = new URLSearchParams({
+          csrf_token: csrfToken,
+          username: activeCred.username,
+          password: activeCred.password,
         });
-        await runButton.waitFor({ state: "visible", timeout: 10000 });
 
-        let resolved = false;
-        const sqlResult = await new Promise<any>((resolve, reject) => {
-          const timeout = setTimeout(
-            () => reject(new Error("SQL query timed out")),
-            60000
-          );
+        const loginResp = await axiosInstance.post(loginUrl, loginData, {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Referer: loginUrl,
+            Origin: baseUrl,
+            Cookie: sessionCookie,
+          },
+        });
 
-          page?.on("response", async (response) => {
-            if (resolved) return;
-            if (response.url().includes("/superset/sql_json/")) {
-              resolved = true;
-              clearTimeout(timeout);
-              const body = await response.json();
-              if (response.status() === 200) {
-                if (body.error) reject(new Error(`Query Error: ${body.error}`));
-                else resolve(body);
-              } else if (
-                response.status() === 403 ||
-                response.status() === 500
-              ) {
-                // Return structured error instead of stringified JSON
-                reject({ type: "forbidden", body });
-              } else {
-                reject(
-                  new Error(
-                    `SQL request failed with status ${response.status()}`
-                  )
-                );
-              }
-            }
+        const redirect = loginResp.headers.location;
+        if (!redirect || redirect.includes("/login")) {
+          throw new Error("Invalid credentials - authentication failed");
+        }
+
+        console.log("Login success, redirected to:", redirect);
+
+        // --- Step 5: Follow redirects fully to finalize session
+        let cookieString = (loginResp.headers["set-cookie"] || [])
+          .map((h: string) => h.split(";")[0])
+          .join("; ");
+
+        let redirectUrl = redirect.startsWith("/")
+          ? baseUrl + redirect
+          : redirect;
+        console.log("Following redirect:", redirectUrl);
+
+        const followResp = await axiosInstance.get(redirectUrl, {
+          headers: { Cookie: cookieString },
+        });
+
+        if (followResp.status === 302 && followResp.headers.location) {
+          const nextUrl = followResp.headers.location.startsWith("/")
+            ? baseUrl + followResp.headers.location
+            : followResp.headers.location;
+          console.log("Following welcome redirect:", nextUrl);
+          const welcomeResp = await axiosInstance.get(nextUrl, {
+            headers: { Cookie: cookieString },
           });
 
-          runButton.click({ force: true }).catch(reject);
+          const finalCookies = [
+            ...(loginResp.headers["set-cookie"] || []),
+            ...(followResp.headers["set-cookie"] || []),
+            ...(welcomeResp.headers["set-cookie"] || []),
+          ]
+            .map((h: string) => h.split(";")[0])
+            .join("; ");
+          cookieString = finalCookies;
+        }
+
+        fs.writeFileSync(
+          cookiePath,
+          JSON.stringify(
+            cookieString.split("; ").map((c) => {
+              const [name, value] = c.split("=");
+              return { name, value };
+            })
+          )
+        );
+        fs.writeFileSync(
+          metaPath,
+          JSON.stringify({ username: activeCred.username })
+        );
+        console.log("Session cookies finalized and saved!");
+
+        // --- Step 6: Access SQL Lab using authenticated cookies
+        const authenticatedAxios = axios.create({
+          baseURL: baseUrl,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            Cookie: cookieString,
+            Referer: `${baseUrl}/superset/welcome/`,
+          },
+          withCredentials: true,
+          maxRedirects: 0,
+          validateStatus: (s) => s >= 200 && s < 400,
         });
+
+        console.log("Loading SQL Lab...");
+        const sqlLabResp = await authenticatedAxios.get("/superset/sqllab/");
+        if (
+          /<form[^>]+action=["']?\/login/i.test(sqlLabResp.data) ||
+          sqlLabResp.status !== 200
+        ) {
+          throw new Error("Not authenticated - cannot access SQL Lab");
+        }
+        console.log("SQL Lab page loaded successfully");
+
+        // --- Step 7: Fetch CSRF token from SQL Lab page body
+        console.log("Extracting CSRF token from HTML body...");
+        const csrfPageResp = await authenticatedAxios.get("/superset/sqllab/");
+        const $$ = cheerio.load(csrfPageResp.data);
+        const apiCsrfToken = $$('input[name="csrf_token"]').val() as string;
+        if (!apiCsrfToken) throw new Error("CSRF token not found in page body");
+        console.log("Extracted CSRF token:", apiCsrfToken);
+
+        // --- Step 8: Execute SQL Query
+        const sanitizedSQL = content.replace(/\{\{|\}\}/g, "");
+        const sqlJsonData = {
+          client_id: `${generateClientId()}`,
+          ctas_method: "TABLE",
+          database_id: 1,
+          expand_data: true,
+          json: true,
+          queryLimit: 100000,
+          runAsync: false,
+          schema: "default",
+          select_as_cta: false,
+          sql: sanitizedSQL,
+          sql_editor_id: `sql_${Date.now()}`,
+        };
+
+        console.log("Executing SQL query...");
+        let sqlResp = await authenticatedAxios.post(sqlJsonUrl, sqlJsonData, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": apiCsrfToken,
+            Referer: `${baseUrl}/superset/sqllab/`,
+          },
+        });
+
+        // --- Step 9: Validate SQL response
+        if (sqlResp.data.error) {
+          console.error("1 SQL Query Error:", sqlResp.data.error);
+          return {
+            success: false,
+            type: "sql_error",
+            error: sqlResp.data.error,
+          };
+        }
+
+        console.log("SQL executed successfully");
 
         return {
           success: true,
           type: "success",
-          title: sqlResult?.query?.db || "No Database",
-          data: sqlResult?.data?.length ? sqlResult.data : [],
-          csv_link: sqlResult?.query?.id || "",
-          columns: sqlResult?.columns?.length ? sqlResult.columns : [],
-          sessionPath: storageStatePath,
+          title: sqlResp.data?.query?.db || "No Database",
+          data: sqlResp.data?.data || [],
+          columns: sqlResp.data?.columns || [],
+          csv_link: sqlResp.data?.query?.id || "",
+          sessionPath: cookiePath,
         };
       } catch (err: any) {
-        if (err?.body) {
+        if (err.response) {
+          // If Axios error with response
+          console.error("2 SQL execution error:", err.response.data);
           return {
             success: false,
-            type: "superset_error",
-            error: err.body, // full Superset response here
+            type: "sql_error",
+            error: err.response.data,
           };
         }
 
-        return { success: false, type: "auth_error", error: err.message };
-      } finally {
-        try {
-          if (newTab) {
-            const closeBtn = newTab.locator("button.ant-tabs-tab-remove");
-            await closeBtn.click();
-          }
-          if (browser) {
-            await browser.close();
-          }
-        } catch {
-          // ignore cleanup errors
-        }
+        // General error fallback
+        console.error("Auth execution error:", err.message);
+        return {
+          success: false,
+          type: "auth_error",
+          error: err.message,
+        };
       }
     }
   );
 
   // ---------- Save & Download CSV ----------
-  ipcMain.handle("superset:downloadCsv", async (_event, csvId: string) => {
-    let browser: Browser | undefined;
+ ipcMain.handle("superset:downloadCsv", async (_event, csvId: string) => {
+  const sessionDir = getSessionBaseDir();
+  fs.mkdirSync(sessionDir, { recursive: true });
+  const cookiePath = path.join(sessionDir, "cookies.json");
+  const metaPath = path.join(sessionDir, "auth_meta.json");
+  const baseUrl = "https://ar0ytyts.superdv.com";
+  const csvUrl = `${baseUrl}/superset/csv/${csvId}`;
 
-    const sessionDir = getSessionBaseDir();
-    fs.mkdirSync(sessionDir, { recursive: true });
-    const storageStatePath = path.join(sessionDir, "auth.json");
-    const metaPath = path.join(sessionDir, "auth_meta.json");
-    const loginUrl = "https://ar0ytyts.superdv.com/login";
+  let cookieString: string | undefined;
 
-    try {
-      // --- Get Superset credentials ---
-      const creds = await getSupersetCredentials();
-      const activeCred = creds.find((c: any) => c.status === true);
-      if (!activeCred)
-        return { success: false, error: "No active Superset credential found" };
+  try {
+    // --- Get Superset credentials ---
+    const creds = await getSupersetCredentials();
+    const activeCred = creds.find((c: any) => c.status === true);
+    if (!activeCred)
+      return { success: false, error: "No active Superset credential found" };
 
-      // --- Launch Playwright ---
-      browser = await chromium.launch({
-        headless: true,
-        executablePath: getChromiumExecutablePath(),
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-        ],
-      });
+    console.log(`Attempting to download CSV for: ${activeCred.username}`);
 
-      // --- Reuse session if available ---
-      let lastUsername = "";
-      if (fs.existsSync(metaPath))
-        lastUsername = JSON.parse(fs.readFileSync(metaPath, "utf-8")).username;
-      const useExistingSession =
-        fs.existsSync(storageStatePath) && lastUsername === activeCred.username;
-      const context = useExistingSession
-        ? await browser.newContext({ storageState: storageStatePath })
-        : await browser.newContext();
+    // --- Reuse session if available ---
+    let lastUsername = "";
+    if (fs.existsSync(metaPath))
+      lastUsername = JSON.parse(fs.readFileSync(metaPath, "utf-8")).username;
 
-      const page = await context.newPage();
-      await page.goto(loginUrl);
-
-      // --- Login if no valid session ---
-      if (!useExistingSession) {
-        await page.fill("#username", activeCred.username);
-        await page.fill("#password", activeCred.password);
-        await Promise.all([
-          page.waitForURL(/.*\/superset\/(welcome|dashboard).*/, {
-            timeout: 15000,
-          }),
-          page.click('input[type="submit"][value="Sign In"]'),
-        ]);
-
-        // Save session
-        await context.storageState({ path: storageStatePath });
-        fs.writeFileSync(
-          metaPath,
-          JSON.stringify({ username: activeCred.username })
-        );
-      }
-
-      // --- Download CSV using authenticated session ---
-      const csvUrl = `https://ar0ytyts.superdv.com/superset/csv/${csvId}`;
-      const response = await context.request.get(csvUrl, {
-        timeout: 180_000,
-      });
-      if (!response.ok())
-        throw new Error(`Failed to download CSV. Status: ${response.status()}`);
-      const buffer = await response.body();
-
-      // --- Save to user's real Downloads folder ---
-      const downloadsDir = app.getPath("downloads"); // OS default Downloads folder
-      const filePath = path.join(downloadsDir, `CRM-Report-${Date.now()}.csv`);
-      fs.writeFileSync(filePath, buffer);
-
-      // --- Open file with default app (Excel, Numbers, etc.) ---
-      // await shell.openPath(filePath);
-
-      return { success: true, filePath };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    } finally {
-      if (browser) await browser.close();
+    // Load cookies and session data if credentials match
+    if (fs.existsSync(cookiePath) && lastUsername === activeCred.username) {
+      const cookieData = JSON.parse(fs.readFileSync(cookiePath, "utf-8"));
+      cookieString = cookieData
+        .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
+        .join("; ");
     }
-  });
+
+    if (!cookieString) {
+      throw new Error("No valid session found. Please log in.");
+    }
+
+    // Initialize axios instance with session cookies
+    const axiosInstance = axios.create({
+      baseURL: baseUrl,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Cookie: cookieString || "",
+        Accept: "application/json",
+      },
+      withCredentials: true,
+      maxRedirects: 0,
+      validateStatus: (status) => status >= 200 && status < 400,
+    });
+
+    // --- Step 2: Download CSV ---
+    console.log("Downloading CSV...");
+    const response = await axiosInstance.get(csvUrl, {
+      timeout: 180_000, // 3 minutes timeout
+      responseType: "arraybuffer", // Ensure we get binary data
+    });
+
+    if (!response.data) throw new Error(`Failed to download CSV. Status: ${response.status}`);
+
+    // Save CSV to Downloads folder
+    const downloadsDir = app.getPath("downloads"); // OS default Downloads folder
+    const filePath = path.join(downloadsDir, `CRM-Report-${Date.now()}.csv`);
+    fs.writeFileSync(filePath, response.data);
+
+    console.log(`CSV saved successfully at: ${filePath}`);
+    return { success: true, filePath };
+
+  } catch (err: any) {
+    console.error("Error downloading CSV:", err.message);
+    return { success: false, error: err.message };
+  }
+});
+
 
   // ---------- Fetch From Asana ----------
   ipcMain.handle(
