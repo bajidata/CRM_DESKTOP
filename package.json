@@ -4,7 +4,7 @@
   },
   "name": "crm-desktop",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -18,6 +18,8 @@
     "install-browsers": "playwright install chromium",
     "copy:browsers": "xcopy \"%LOCALAPPDATA%\\ms-playwright\\chromium-1187\\chrome-win\" \"dist-electron\\chromium\\chrome-win\" /E /I /H /Y",
     "dist:publish:win": "npm run transpile:electron && npm run build && npm run copy:sql && npm run copy:session && electron-builder --win --x64 --publish always",
+    "dist:publish:linux": "npm run transpile:electron && npm run build && npm run copy:sql && npm run copy:session && electron-builder --linux AppImage --x64 --publish always",
+    "dist:publish:all": "npm run dist:publish:win && npm run dist:publish:linux",
     "copy:sql": "cp-cli \"src/electron/sql\" dist-electron/sql --recursive --glob \"**/*\"",
     "copy:session": "cp-cli \"src/electron/session\" dist-electron/session --recursive --glob \"**/*\"",
     "postinstall": ""
