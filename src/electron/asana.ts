@@ -18,3 +18,6 @@ export async function fetchAsanaProjects(): Promise<AsanaProject[]> {
 
   return response.data.data as AsanaProject[];
 }
+
+
+// curl https://app.asana.com/api/1.0/users/me -H "Authorization: Bearer 2/1207986152477905/1211255467312096:7bff2c6868b77ee35049b98f5349e280"

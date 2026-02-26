@@ -609,11 +609,30 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
   ipcMain.handle(
     "sql:runFile",
     async (_event, brand: string, file: string, content: string) => {
+      console.log("==================================")
+      console.log("BRAND REQUEST: ", brand)
+      console.log("==================================")
       const sessionDir = getSessionBaseDir();
       fs.mkdirSync(sessionDir, { recursive: true });
       const cookiePath = path.join(sessionDir, "cookies.json");
       const metaPath = path.join(sessionDir, "auth_meta.json");
-      const baseUrl = "https://ar0ytyts.superdv.com";
+      // const baseUrl = "https://ar0ytyts.superdv.com";
+      // Map brand to base URL
+      const BRAND_BASE_URLS: Record<string, string> = {
+        BH: "https://b6zmfgg9.superdv.com",         // BH new URL here
+        BJ: "https://ar0ytyts.superdv.com",
+        JB: "https://ar0ytyts.superdv.com",
+        S6: "https://ar0ytyts.superdv.com",
+      };
+
+      // Normalize brand (avoid lowercase issues)
+      const normalizedBrand = (brand || "").toUpperCase().trim();
+
+      // Pick correct base URL (fallback to default)
+      const baseUrl =
+        BRAND_BASE_URLS[normalizedBrand] ||
+        "https://ar0ytyts.superdv.com";
+
       const loginUrl = `${baseUrl}/login/`;
       const sqlJsonUrl = `${baseUrl}/superset/sql_json/`;
 

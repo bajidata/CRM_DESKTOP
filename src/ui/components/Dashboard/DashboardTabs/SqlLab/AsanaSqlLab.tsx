@@ -64,8 +64,11 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
       value: task.gid,
       label: `${task.name}`,
       task,
-    }))
+    })),
   );
+
+  const [brands, setBrands] = useState<string[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string>("");
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -92,8 +95,8 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
           ({ success: false, data: [], sections: [] } as AsanaApiResponse);
 
         if (res?.success && res.sections) {
-          console.log("------------------------------------------")
-          console.log(res.sections)
+          console.log("------------------------------------------");
+          console.log(res.sections);
           setAsanaSections(res.sections);
           const firstTask = res.sections[0]?.tasks[0] || null;
 
@@ -144,6 +147,20 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
     fetchTasks();
   }, [selectedProject]);
 
+  // Extract Brands From Description
+  const extractBrands = (description: string): string[] => {
+    const regex =
+      /What brand do you want to have analysis on this request\.\:\s*([\s\S]*?)(?=\n\d+\.|\n\d+[a-zA-Z]?\.|\n[A-Z][^\n]*\:|\n\n)/i;
+
+    const match = description?.match(regex);
+    if (!match) return [];
+
+    return match[1]
+      .split(/\n|,/) // split by newline or comma
+      .map((b) => b.trim())
+      .filter(Boolean);
+  };
+
   const handleSelectTask = useCallback(
     (task: Task & { inputs?: InputField[] }) => {
       setSelectedTask(task);
@@ -164,24 +181,34 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
         requestor: task.identity.requestor?.trim() // check if not null/empty
           ? task.identity.requestor
           : task.created_by?.name // fallback: use created_at as string
-          ? task.created_by?.name
-          : "Asana", // final default
+            ? task.created_by?.name
+            : "Asana", // final default
       });
 
       setScriptDescription({
         columns: Object.keys(
-          task.latest_sql?.parsed_sql.editable_contents || {}
+          task.latest_sql?.parsed_sql.editable_contents || {},
         ),
-        description: task.notes 
+        description: task.notes,
         // description: (task.notes || "No description available").replace(
         //   /requestor:\s*.+(\r?\n)?/i,
         //   ""
         // ),
       });
 
+      // Extract Brands HERE
+      const extracted = extractBrands(task.notes || "");
+      setBrands(extracted);
+
+      if (extracted.length === 1) {
+        setSelectedBrand(extracted[0]);
+      } else {
+        setSelectedBrand("");
+      }
+
       setActiveTabRight("description");
     },
-    []
+    [],
   );
 
   type InputType = "date" | "datetime" | "select";
@@ -194,7 +221,7 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
       }
       setAsanaInputValues((prev) => ({ ...prev, [name]: formattedValue }));
     },
-    []
+    [],
   );
 
   const normalizeDateTime = (value: string) => {
@@ -231,12 +258,21 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
     setCurrentPage(1);
     setShowVpnInfo({ title: "", text: "" });
 
-    console.log(sqlContent);
+    // console.log(sqlContent);
     try {
+      let brandToSend = selectedTask.identity?.brand || "";
+
+      if (brands.length === 1) {
+        brandToSend = brands[0];
+      } else if (brands.length > 1) {
+        brandToSend = selectedBrand;
+      }
+
       const res = await window.electron?.saveFileContent(
-        selectedTask.identity.brand || "",
+        // selectedTask.identity.brand || "",
+        brandToSend,
         selectedTask.latest_sql.gid,
-        sqlContent
+        sqlContent,
       );
       console.log(res);
 
@@ -259,7 +295,13 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
       console.error("Execution failed:", err);
       setShowVpnInfo({ title: "Error", text: "An unexpected error occurred." });
     }
-  }, [selectedTask, asanaInputValues, setIsRequesting]);
+  }, [selectedTask, asanaInputValues, selectedBrand, brands, setIsRequesting]);
+
+  useEffect(() => {
+    if (brands.length > 0) {
+      setSelectedBrand(brands[0]);
+    }
+  }, [brands]);
 
   if (isFetchingAsana) {
     return (
@@ -328,8 +370,8 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
               backgroundColor: state.isSelected
                 ? "#10B981"
                 : state.isFocused
-                ? "#D1FAE5"
-                : "white",
+                  ? "#D1FAE5"
+                  : "white",
               color: state.isSelected ? "white" : "#065F46",
             }),
             menuPortal: (base) => ({ ...base, zIndex: 9999 }), // make sure it's above everything
@@ -338,8 +380,49 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
         />
 
         {/* Input Fields */}
-        {/* Input Fields */}
         <div className="mt-4 overflow-y-auto max-h-[calc(100vh-4rem-150px)]">
+          {brands.length > 1 && (
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-[#0c865e] mb-1">
+                Select Brand
+              </label>
+
+              <Select
+                value={
+                  selectedBrand
+                    ? { value: selectedBrand, label: selectedBrand }
+                    : null
+                }
+                onChange={(opt) => setSelectedBrand(opt?.value || "")}
+                options={brands.map((b) => ({
+                  value: b,
+                  label: b,
+                }))}
+                isClearable={false} // Important (prevents clearing to null)
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                menuShouldBlockScroll={true}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderColor: "#0c865e",
+                    boxShadow: "none",
+                    "&:hover": { borderColor: "#10B981" },
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#10B981"
+                      : state.isFocused
+                        ? "#D1FAE5"
+                        : "white",
+                    color: state.isSelected ? "white" : "#065F46",
+                  }),
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                }}
+              />
+            </div>
+          )}
           {selectedTask?.inputs?.map((input) => (
             <div key={input.name} className="mb-4">
               <label className="block text-sm font-semibold text-[#0c865e] mb-1">
@@ -352,7 +435,7 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
                 <Select
                   value={
                     input.options?.find(
-                      (opt) => opt === asanaInputValues[input.name]
+                      (opt) => opt === asanaInputValues[input.name],
                     )
                       ? {
                           value: asanaInputValues[input.name],
@@ -383,8 +466,8 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
                       backgroundColor: state.isSelected
                         ? "#10B981"
                         : state.isFocused
-                        ? "#D1FAE5"
-                        : "white",
+                          ? "#D1FAE5"
+                          : "white",
                       color: state.isSelected ? "white" : "#065F46",
                     }),
                     menuPortal: (base) => ({ ...base, zIndex: 9999 }), // always on top
@@ -405,7 +488,7 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
                     handleInputChange(
                       input.name,
                       e.target.value,
-                      "text" as any
+                      "text" as any,
                     );
                     const target = e.target;
                     target.style.height = "auto";
@@ -425,13 +508,14 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
               isRequesting ||
               !selectedTask ||
               Object.values(asanaInputValues).some(
-                (val) => !val || val.trim() === ""
-              )
+                (val) => !val || val.trim() === "",
+              ) ||
+              (brands.length > 1 && !selectedBrand)
             }
             className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg w-full shadow text-white ${
               isRequesting ||
               Object.values(asanaInputValues).some(
-                (val) => !val || val.trim() === ""
+                (val) => !val || val.trim() === "",
               )
                 ? "bg-[#0c865e] cursor-not-allowed"
                 : "bg-[#0c865e] hover:bg-[#085f42]"
@@ -439,9 +523,8 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
           >
             {isRequesting ? (
               <>
-              Run Task
+                Run Task
                 <Loader2 className="w-4 h-4 animate-spin" />
-                
               </>
             ) : (
               "Run Task"
