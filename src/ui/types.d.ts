@@ -84,6 +84,7 @@ declare global {
 
       // 🔹 Superset CSV download
       downloadCsv: (
+        brand: string,
         csvId: string
       ) => Promise<{ success: boolean; filePath?: string; error?: string }>;
 

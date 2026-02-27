@@ -25,6 +25,7 @@ interface ResultPanelProps {
   onPageChange: (page: number) => void;
   showSupersetError: { title: string; text: string };
   csvId: string;
+  brand: string;
 }
 
 export const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -38,6 +39,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
   onPageChange,
   showSupersetError,
   csvId,
+  brand
 }) => {
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -88,7 +90,7 @@ export const ResultPanel: React.FC<ResultPanelProps> = ({
     try {
       setExporting(true);
       setOpen(false);
-      const csvFilePth = await exportToCSV(csvId);
+      const csvFilePth = await exportToCSV(brand, csvId);
       if (csvFilePth) {
         console.log("CSV downloaded to:", csvFilePth);
         setSuccessMsg(`CSV successfully saved to downloads`);

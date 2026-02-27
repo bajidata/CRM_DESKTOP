@@ -16,11 +16,11 @@
   
 // };
 
-export const exportToCSV = async (csvId: string) => {
+export const exportToCSV = async (brand: string, csvId: string) => {
   try {
     if (!window.electron) throw new Error("Electron API not available");
 
-    const res = await window.electron.downloadCsv(csvId);
+    const res = await window.electron.downloadCsv(brand, csvId);
 
     if (!res?.success || !res.filePath) {
       console.error("CSV download failed or canceled:", res?.error);

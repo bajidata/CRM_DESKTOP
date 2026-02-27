@@ -18,6 +18,7 @@ interface AsanaRightPanelProps {
   scriptDescription: Description;
   taskInfo: any;
   csvId: string;
+  brand: string;
 }
 
 export const AsanaRightPanel: React.FC<AsanaRightPanelProps> = ({
@@ -33,7 +34,8 @@ export const AsanaRightPanel: React.FC<AsanaRightPanelProps> = ({
   showSupersetError,
   scriptDescription,
   taskInfo,
-  csvId
+  csvId,
+  brand
 }) => {
   return (
     <div className="col-span-3 flex flex-col bg-white rounded-lg shadow-md font-mono text-sm">
@@ -50,6 +52,7 @@ export const AsanaRightPanel: React.FC<AsanaRightPanelProps> = ({
             onPageChange={onPageChange}
             showSupersetError={showSupersetError}
             csvId={csvId}
+            brand={brand}
           />
         )}
 

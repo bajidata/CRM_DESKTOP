@@ -547,6 +547,7 @@ export const AsanaSqlLab: React.FC<AsanaSqlLabProps> = ({
         scriptDescription={scriptDescription}
         taskInfo={taskInfo}
         csvId={csvId}
+        brand={selectedBrand}
       />
     </div>
   );

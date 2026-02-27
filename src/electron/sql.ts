@@ -34,7 +34,7 @@ function getChromiumExecutablePath() {
     process.cwd(),
     "dist-electron",
     "chromium",
-    "chrome-win"
+    "chrome-win",
   );
 
   const exePath =
@@ -258,21 +258,21 @@ async function fetchLatestSqlComment(taskGid: string) {
 // ---------- Fetch task details ----------
 async function fetchTaskDetails(taskGid: string) {
   const task: any = await asanaGet(
-    `/tasks/${taskGid}?opt_fields=name,created_by.name,created_by.gid,assignee.name,notes,custom_fields.name,custom_fields.enum_value,followers.name`
+    `/tasks/${taskGid}?opt_fields=name,created_by.name,created_by.gid,assignee.name,notes,custom_fields.name,custom_fields.enum_value,followers.name`,
   );
   console.log(
-    "----------------------------------------------------------------"
+    "----------------------------------------------------------------",
   );
   console.log(task);
   console.log(
-    "----------------------------------------------------------------"
+    "----------------------------------------------------------------",
   );
   const identity = parseIdentity(task.notes || "");
   const latest_sql = await fetchLatestSqlComment(taskGid);
   const inputs = latest_sql
     ? classifyInputFields(
         latest_sql.parsed_sql.editable_contents,
-        latest_sql.parsed_sql.supported_values
+        latest_sql.parsed_sql.supported_values,
       )
     : [];
   return { ...task, identity, latest_sql, inputs };
@@ -299,15 +299,15 @@ async function fetchSectionTasks(sectionGid: string, role: string) {
   let filteredTasks;
   if (normalizedRole === "analysis") {
     filteredTasks = tasks.filter((t: any) =>
-      t.name.toLowerCase().includes("!crm !analysis")
+      t.name.toLowerCase().includes("!crm !analysis"),
     );
   } else if (normalizedRole === "bonus") {
     filteredTasks = tasks.filter((t: any) =>
-      t.name.toLowerCase().includes("!crm !bonus")
+      t.name.toLowerCase().includes("!crm !bonus"),
     );
   } else {
     filteredTasks = tasks.filter((t: any) =>
-      t.name.toLowerCase().includes("!crm")
+      t.name.toLowerCase().includes("!crm"),
     );
   }
 
@@ -316,7 +316,7 @@ async function fetchSectionTasks(sectionGid: string, role: string) {
     filteredTasks.map(async (t: any) => {
       const details = await fetchTaskDetails(t.gid);
       return details.latest_sql ? details : null;
-    })
+    }),
   );
 
   return enriched.filter(Boolean);
@@ -339,7 +339,7 @@ async function fetchProjectStructure(projectGid: string, role: string) {
           task_count: tasks.length,
           tasks,
         };
-      })
+      }),
     );
 
     return sectionResults.filter(Boolean);
@@ -389,7 +389,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
       } catch (err: any) {
         return { success: false, error: err.message };
       }
-    }
+    },
   );
 
   // ---------- Save & Run SQL ----------
@@ -609,9 +609,9 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
   ipcMain.handle(
     "sql:runFile",
     async (_event, brand: string, file: string, content: string) => {
-      console.log("==================================")
-      console.log("BRAND REQUEST: ", brand)
-      console.log("==================================")
+      console.log("==================================");
+      console.log("BRAND REQUEST: ", brand);
+      console.log("==================================");
       const sessionDir = getSessionBaseDir();
       fs.mkdirSync(sessionDir, { recursive: true });
       const cookiePath = path.join(sessionDir, "cookies.json");
@@ -619,7 +619,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
       // const baseUrl = "https://ar0ytyts.superdv.com";
       // Map brand to base URL
       const BRAND_BASE_URLS: Record<string, string> = {
-        BH: "https://b6zmfgg9.superdv.com",         // BH new URL here
+        BH: "https://b6zmfgg9.superdv.com", // BH new URL here
         BJ: "https://ar0ytyts.superdv.com",
         JB: "https://ar0ytyts.superdv.com",
         S6: "https://ar0ytyts.superdv.com",
@@ -630,8 +630,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
 
       // Pick correct base URL (fallback to default)
       const baseUrl =
-        BRAND_BASE_URLS[normalizedBrand] ||
-        "https://ar0ytyts.superdv.com";
+        BRAND_BASE_URLS[normalizedBrand] || "https://ar0ytyts.superdv.com";
 
       const loginUrl = `${baseUrl}/login/`;
       const sqlJsonUrl = `${baseUrl}/superset/sql_json/`;
@@ -755,12 +754,12 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
             cookieString.split("; ").map((c) => {
               const [name, value] = c.split("=");
               return { name, value };
-            })
-          )
+            }),
+          ),
         );
         fs.writeFileSync(
           metaPath,
-          JSON.stringify({ username: activeCred.username })
+          JSON.stringify({ username: activeCred.username }),
         );
         console.log("Session cookies finalized and saved!");
 
@@ -861,83 +860,104 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
           error: err.message,
         };
       }
-    }
+    },
   );
 
   // ---------- Save & Download CSV ----------
- ipcMain.handle("superset:downloadCsv", async (_event, csvId: string) => {
-  const sessionDir = getSessionBaseDir();
-  fs.mkdirSync(sessionDir, { recursive: true });
-  const cookiePath = path.join(sessionDir, "cookies.json");
-  const metaPath = path.join(sessionDir, "auth_meta.json");
-  const baseUrl = "https://ar0ytyts.superdv.com";
-  const csvUrl = `${baseUrl}/superset/csv/${csvId}`;
+  ipcMain.handle("superset:downloadCsv", async (_event, brand: string, csvId: string) => {
+    const sessionDir = getSessionBaseDir();
+    fs.mkdirSync(sessionDir, { recursive: true });
+    const cookiePath = path.join(sessionDir, "cookies.json");
+    const metaPath = path.join(sessionDir, "auth_meta.json");
 
-  let cookieString: string | undefined;
+    const BRAND_BASE_URLS: Record<string, string> = {
+      BH: "https://b6zmfgg9.superdv.com", // BH new URL here
+      BJ: "https://ar0ytyts.superdv.com",
+      JB: "https://ar0ytyts.superdv.com",
+      S6: "https://ar0ytyts.superdv.com",
+    };
 
-  try {
-    // --- Get Superset credentials ---
-    const creds = await getSupersetCredentials();
-    const activeCred = creds.find((c: any) => c.status === true);
-    if (!activeCred)
-      return { success: false, error: "No active Superset credential found" };
+    // Normalize brand (avoid lowercase issues)
+    const normalizedBrand = (brand || "").toUpperCase().trim();
 
-    console.log(`Attempting to download CSV for: ${activeCred.username}`);
+    // Pick correct base URL (fallback to default)
+    const baseUrl =
+      BRAND_BASE_URLS[normalizedBrand] || "https://ar0ytyts.superdv.com";
 
-    // --- Reuse session if available ---
-    let lastUsername = "";
-    if (fs.existsSync(metaPath))
-      lastUsername = JSON.parse(fs.readFileSync(metaPath, "utf-8")).username;
+    // const baseUrl = "https://ar0ytyts.superdv.com";
+    const csvUrl = `${baseUrl}/superset/csv/${csvId}`;
 
-    // Load cookies and session data if credentials match
-    if (fs.existsSync(cookiePath) && lastUsername === activeCred.username) {
-      const cookieData = JSON.parse(fs.readFileSync(cookiePath, "utf-8"));
-      cookieString = cookieData
-        .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
-        .join("; ");
+    let cookieString: string | undefined;
+
+    try {
+      // --- Get Superset credentials ---
+      const creds = await getSupersetCredentials();
+      const activeCred = creds.find((c: any) => c.status === true);
+      if (!activeCred)
+        return { success: false, error: "No active Superset credential found" };
+
+      console.log(`Attempting to download CSV for: ${activeCred.username}`);
+
+      // --- Reuse session if available ---
+      let lastUsername = "";
+      if (fs.existsSync(metaPath))
+        lastUsername = JSON.parse(fs.readFileSync(metaPath, "utf-8")).username;
+
+      // Load cookies and session data if credentials match
+      if (fs.existsSync(cookiePath) && lastUsername === activeCred.username) {
+        const cookieData = JSON.parse(fs.readFileSync(cookiePath, "utf-8"));
+        cookieString = cookieData
+          .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
+          .join("; ");
+      }
+
+      if (!cookieString) {
+        throw new Error("No valid session found. Please log in.");
+      }
+
+      // Initialize axios instance with session cookies
+      const axiosInstance = axios.create({
+        baseURL: baseUrl,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          Cookie: cookieString || "",
+          Accept: "application/json",
+        },
+        withCredentials: true,
+        maxRedirects: 0,
+        validateStatus: (status) => status >= 200 && status < 400,
+      });
+
+      // --- Step 2: Download CSV ---
+      console.log("Downloading CSV...");
+      const response = await axiosInstance.get(csvUrl, {
+        timeout: 180_000, // 3 minutes timeout
+        responseType: "arraybuffer", // Ensure we get binary data
+      });
+
+      if (!response.data)
+        throw new Error(`Failed to download CSV. Status: ${response.status}`);
+
+      // Save CSV to Downloads folder
+      const downloadsDir = app.getPath("downloads"); // OS default Downloads folder
+      // const filePath = path.join(downloadsDir, `${brand}-Report-${Date.now()}.csv`);
+      const safeBrand = brand && brand.trim() ? brand : "CRM";
+
+      const filePath = path.join(
+        downloadsDir,
+        `${safeBrand}-Report-${Date.now()}.csv`
+      );
+
+      fs.writeFileSync(filePath, response.data);
+
+      console.log(`CSV saved successfully at: ${filePath}`);
+      return { success: true, filePath };
+    } catch (err: any) {
+      console.error("Error downloading CSV:", err.message);
+      return { success: false, error: err.message };
     }
-
-    if (!cookieString) {
-      throw new Error("No valid session found. Please log in.");
-    }
-
-    // Initialize axios instance with session cookies
-    const axiosInstance = axios.create({
-      baseURL: baseUrl,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        Cookie: cookieString || "",
-        Accept: "application/json",
-      },
-      withCredentials: true,
-      maxRedirects: 0,
-      validateStatus: (status) => status >= 200 && status < 400,
-    });
-
-    // --- Step 2: Download CSV ---
-    console.log("Downloading CSV...");
-    const response = await axiosInstance.get(csvUrl, {
-      timeout: 180_000, // 3 minutes timeout
-      responseType: "arraybuffer", // Ensure we get binary data
-    });
-
-    if (!response.data) throw new Error(`Failed to download CSV. Status: ${response.status}`);
-
-    // Save CSV to Downloads folder
-    const downloadsDir = app.getPath("downloads"); // OS default Downloads folder
-    const filePath = path.join(downloadsDir, `CRM-Report-${Date.now()}.csv`);
-    fs.writeFileSync(filePath, response.data);
-
-    console.log(`CSV saved successfully at: ${filePath}`);
-    return { success: true, filePath };
-
-  } catch (err: any) {
-    console.error("Error downloading CSV:", err.message);
-    return { success: false, error: err.message };
-  }
-});
-
+  });
 
   // ---------- Fetch From Asana ----------
   ipcMain.handle(
@@ -949,7 +969,7 @@ export function registerSqlHandlers(ipcMain: IpcMain) {
       } catch (err: any) {
         return { success: false, error: err.message };
       }
-    }
+    },
   );
 
   // ---------- Projects ----------
